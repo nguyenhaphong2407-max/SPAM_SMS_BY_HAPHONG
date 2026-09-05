@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Quản Lý & Gửi SMS Hàng Loạt</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-color: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --success-color: #22c55e;
+            --danger-color: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar {
+            width: 260px;
+            background-color: var(--card-bg);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            padding: 20px 0;
+        }
+
+        .brand {
+            padding: 0 20px 20px 20px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .menu-list {
+            list-style: none;
+            margin-top: 20px;
+        }
+
+        .menu-item {
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .menu-item:hover, .menu-item.active {
+            background-color: rgba(79, 70, 229, 0.1);
+            color: var(--primary-color);
+            border-left: 4px solid var(--primary-color);
+        }
+
+        /* Main Content Area */
+        .main-content {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+        }
+
+        .header {
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            color: var(--text-muted);
+        }
+
+        /* Dynamic Section Panels */
+        .tab-panel {
+            display: none;
+            background-color: var(--card-bg);
+            border-radius: 10px;
+            padding: 25px;
+            border: 1px solid var(--border-color);
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .tab-panel.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Form Controls */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-color);
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary-color);
+        }
+
+        textarea.form-control {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        .row {
+            display: flex;
+            gap: 20px;
+        }
+
+        .col {
+            flex: 1;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-danger {
+            background-color: var(--danger-color);
+            color: #fff;
+        }
+
+        /* Console Output Log */
+        .console-log {
+            background-color: #000;
+            border-radius: 6px;
+            padding: 15px;
+            font-family: 'Courier New', Courier, monospace;
+            height: 200px;
+            overflow-y: auto;
+            color: #00ff00;
+            border: 1px solid var(--border-color);
+            margin-top: 20px;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+            font-size: 0.85rem;
+        }
+
+        .log-entry.error { color: #ff5555; }
+        .log-entry.info { color: #55ffff; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="brand">
+            <i class="fa-solid fa-paper-plane"></i>
+            <span>SMS Hub Control</span>
+        </div>
+        <ul class="menu-list">
+            <li class="menu-item active" onclick="switchTab('single-tab', this)">
+                <i class="fa-solid fa-mobile-screen"></i> Gửi Đơn Lẻ
+            </li>
+            <li class="menu-item" onclick="switchTab('bulk-tab', this)">
+                <i class="fa-solid fa-users-gear"></i> Gửi Theo Danh Sách
+            </li>
+            <li class="menu-item" onclick="switchTab('api-tab', this)">
+                <i class="fa-solid fa-key"></i> Cấu Hình Gateway/API
+            </li>
+            <li class="menu-item" onclick="switchTab('logs-tab', this)">
+                <i class="fa-solid fa-terminal"></i> Nhật Ký Tiến Trình
+            </li>
+        </ul>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <h1 id="panel-title">Gửi Tin Nhắn Đơn Lẻ</h1>
+            <p>Bảng điều khiển và cấu hình tiến trình tin nhắn</p>
+        </div>
+
+        <div id="single-tab" class="tab-panel active">
+            <form onsubmit="handleExecute(event, 'Gửi đơn lẻ')">
+                <div class="form-group">
+                    <label>Số điện thoại nhận:</label>
+                    <input type="text" class="form-control" placeholder="Ví dụ: 0987654321" required>
+                </div>
+                <div class="form-group">
+                    <label>Nội dung tin nhắn:</label>
+                    <textarea class="form-control" placeholder="Nhập nội dung cần gửi..." required></textarea>
+                </div>
+                <div class="row">
+                    <div class="col form-group">
+                        <label>Số lượng lặp lại (vòng lặp):</label>
+                        <input type="number" class="form-control" value="1" min="1" max="100">
+                    </div>
+                    <div class="col form-group">
+                        <label>Thời gian giãn cách (mili giây):</label>
+                        <input type="number" class="form-control" value="1000" step="500">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fa-solid fa-play"></i> Bắt Đầu Tiến Trình
+                </button>
+            </form>
+        </div>
+
+        <div id="bulk-tab" class="tab-panel">
+            <form onsubmit="handleExecute(event, 'Gửi theo danh sách')">
+                <div class="form-group">
+                    <label>Danh sách số điện thoại (Mỗi số 1 dòng):</label>
+                    <textarea class="form-control" placeholder="0981111111&#10;0982222222&#10;0983333333" style="height: 150px;" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Mẫu tin nhắn hàng loạt:</label>
+                    <textarea class="form-control" placeholder="Nhập nội dung mẫu..." required></textarea>
+                </div>
+                <div class="row">
+                    <div class="col form-group">
+                        <label>Số luồng chạy song song (Threads):</label>
+                        <input type="number" class="form-control" value="3" min="1" max="10">
+                    </div>
+                    <div class="col form-group">
+                        <label>Delay giữa các luồng (s):</label>
+                        <input type="number" class="form-control" value="2" min="0">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fa-solid fa-layer-group"></i> Kích Hoạt Chiến Dịch
+                </button>
+            </form>
+        </div>
+
+        <div id="api-tab" class="tab-panel">
+            <form onsubmit="saveApiSettings(event)">
+                <div class="form-group">
+                    <label>Loại Gateway / Nhà cung cấp API:</label>
+                    <select class="form-control">
+                        <option>Custom HTTP Request (GET/POST)</option>
+                        <option>Twilio API</option>
+                        <option>SpeedSMS API</option>
+                        <option>GSM Modem Local Host</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Endpoint URL / API Endpoint:</label>
+                    <input type="url" class="form-control" placeholder="https://api.yourgateway.com/v1/send" required>
+                </div>
+                <div class="form-group">
+                    <label>API Key / Access Token:</label>
+                    <input type="password" class="form-control" placeholder="Nhập token bảo mật..." required>
+                </div>
+                <div class="form-group">
+                    <label>Cấu hình Headers (JSON format):</label>
+                    <textarea class="form-control" placeholder='{"Authorization": "Bearer TOKEN", "Content-Type": "application/json"}'></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fa-solid fa-floppy-disk"></i> Lưu Cấu Hình
+                </button>
+            </form>
+        </div>
+
+        <div id="logs-tab" class="tab-panel">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <label style="font-weight: bold;">Nhật ký hoạt động thời gian thực:</label>
+                <button class="btn btn-danger" style="padding: 5px 10px; font-size: 0.8rem;" onclick="clearLogs()">
+                    <i class="fa-solid fa-trash"></i> Xóa log
+                </button>
+            </div>
+            <div class="console-log" id="consoleOutput">
+                <div class="log-entry info">[System] Khởi tạo hệ thống giao diện thành công.</div>
+                <div class="log-entry">[System] Sẵn sàng nhận lệnh...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Chuyển đổi qua lại giữa các tab menu
+        function switchTab(tabId, element) {
+            // Unactive tất cả tab và menu
+            document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
+            document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('active'));
+
+            // Active tab được chọn
+            document.getElementById(tabId).classList.add('active');
+            element.classList.add('active');
+
+            // Cập nhật tiêu đề
+            const titleMap = {
+                'single-tab': 'Gửi Tin Nhắn Đơn Lẻ',
+                'bulk-tab': 'Gửi Tin Nhắn Theo Danh Sách',
+                'api-tab': 'Cấu Hình API / Gateway',
+                'logs-tab': 'Nhật Ký Tiến Trình System'
+            };
+            document.getElementById('panel-title').innerText = titleMap[tabId];
+        }
+
+        // Xuất log ra Console mô phỏng
+        function appendLog(message, type = 'default') {
+            const consoleObj = document.getElementById('consoleOutput');
+            const entry = document.createElement('div');
+            const timestamp = new Date().toLocaleTimeString();
+            
+            entry.className = `log-entry ${type}`;
+            entry.innerText = `[${timestamp}] ${message}`;
+            consoleObj.appendChild(entry);
+            consoleObj.scrollTop = consoleObj.scrollHeight;
+        }
+
+        // Xử lý nút kích hoạt
+        function handleExecute(event, actionName) {
+            event.preventDefault();
+            appendLog(`Đã kích hoạt tiến trình: ${actionName}`, 'info');
+            appendLog('Đang gửi dữ liệu đến Gateway...', 'default');
+            
+            // Giả lập phản hồi tiến trình
+            setTimeout(() => {
+                appendLog(`[Thành công] Tiến trình "${actionName}" đã được đẩy vào hàng chờ!`, 'info');
+            }, 1000);
+        }
+
+        // Lưu cài đặt API
+        function saveApiSettings(event) {
+            event.preventDefault();
+            appendLog('Cấu hình API Gateway đã được lưu thành công!', 'info');
+        }
+
+        // Xóa logs
+        function clearLogs() {
+            document.getElementById('consoleOutput').innerHTML = '<div class="log-entry">[System] Nhật ký đã được dọn dẹp.</div>';
+        }
+    </script>
+</body>
+</html>
